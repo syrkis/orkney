@@ -29,13 +29,38 @@ gen_df = get_df(generation)
 wind_df = get_df(wind)
 
 ####################################################
-## Preprocess the data
+## Preprocessing class
 from matplotlib import pyplot as plt
 import seaborn as sns
+import torch
+from torch import nn
+import math
+from pytorch_forecasting.data.timeseries import TimeSeriesDataSet
 
-sns.pairplot(wind_df)
-plt.show()
+gen_df = gen_df[gen_df.columns[2]]
+wind_df = wind_df[wind_df.columns[[0, 3]]]
+
+
+directions = ['E', 'ENE', 'NE', 'NNE', 'N', 'NNW', 'NW', 'WNW',
+          'W', 'WSW', 'SW', 'SSW', 'S', 'SSE', 'SE', 'ESE']
+radians = {d: (idx / 16) * 2 * math.pi for idx, d in enumerate(directions)}    
+long = lambda direction: round(math.cos(radians[direction]), 3)
+lat  = lambda direction: round(math.sin(radians[direction]), 3)
+
+wind_df['long'] = wind_df[wind_df.columns[0]].apply(long)
+wind_df['lat'] = wind_df[wind_df.columns[0]].apply(lat)
+
+wind_df['long'] = wind_df['long'].multiply(wind_df['Speed'])
+wind_df['lat'] = wind_df['lat'].multiply(wind_df['Speed'])
+
+wind_df = wind_df[wind_df.columns[2:]].resample('1Min', kind='timestamp').pad()
+data = gen_df.to_frame().join(wind_df)
+data = data.asfreq(pd.infer_freq(data.index))
+out = int(data.index.apply(lambda t: t * 10 ** 9))
+print(out)
+#M = TimeSeriesDataSet(data, 'time', 'Total', ['long', 'lat'])
+
 
 ####################################################
 ## Train model
-
+from torch.distributed.pipeline.sync import Pipe
