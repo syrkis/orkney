@@ -11,3 +11,4 @@ pipe = Pipeline([
         ('scale', StandardScaler()),
         ('model', SVR())
     ])
+
