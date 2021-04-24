@@ -24,23 +24,37 @@ wind  = client.query(
     "SELECT * FROM MetForecasts where time > now()-90d and time <= now() and Lead_hours = '1'"
     ) # Query written in InfluxQL
 
+forecasts = client.query(
+    "SELECT * FROM MetForecasts where time > now()"
+) # Query written in InfluxQL
 
 gen_df = get_df(generation)
-wind_df = get_df(wind)
+win_df = get_df(wind)
+for_df = get_df(forecasts)
+
+####################################################
+## Pre pipeline processing
+
+from icecream import ic
+import numpy as np
+
+def tminus(X, y):
+    ic(X, y)
+
+D = gen_df['Total']
+D = win_df.resample('1Min').pad().merge(gen_df['Total'], how='left', right_index=True, left_index=True)
+y = D['Total']
+X = D[D.columns[D.columns != 'Total']]
 
 
+P = for_df.to_numpy()
+ic(P[:,1])
 ####################################################
 ## Preprocessing classes
 
 from matplotlib import pyplot as plt
 import seaborn as sns
 import math
-import numpy as np
-from icecream import ic
-
-def prepro(X, y=None):
-    print(**kw_args)
-    return y
 
 class Prepro:
 
@@ -56,8 +70,7 @@ class Prepro:
         X = self.__vectorize(X)
         return X
 
-    def __augment(self, X, y = None, n = 10):
-
+    def __augment(self, X, y = None, n = 10): 
         if type(y) is type(None):
             y = get_df(generation)['Total'] 
         D = X.resample('1Min').pad() 
@@ -72,20 +85,15 @@ class Prepro:
     def __vectorize(self, X):
         directions = ['E', 'ENE', 'NE', 'NNE', 'N', 'NNW', 'NW', 'WNW',
                   'W', 'WSW', 'SW', 'SSW', 'S', 'SSE', 'SE', 'ESE']
-        radians = {d: (idx / 16) * 2 * math.pi for idx, d in enumerate(directions)}    
+        radians = {d: (idx / 16) * 2 * math.pi for idx, d in enumerate(directions)}
         long = lambda direction: round(math.cos(radians[direction]), 3)
-        lat  = lambda direction: round(math.sin(radians[direction]), 3)
-        
-        ic(X.columns)
-
+        lat  = lambda direction: round(math.sin(radians[direction]), 3) 
         X['long'] = X['Direction'].apply(long)
         X['lat'] = X['Direction'].apply(lat)
-
         X['long'] = X['long'].multiply(X['Speed'])
-        X['lat'] = X['lat'].multiply(X['Speed'])
-        
+        X['lat'] = X['lat'].multiply(X['Speed']) 
         if self.piperun:
-            X = X[X.columns[X.columns != 'Direction']]
+            X = X[X.columns[X.columns != 'Direction']]  
         return X
         
 
@@ -97,8 +105,8 @@ import pickle
 from sklearn.svm import SVR
 
 pipeline = Pipeline([
-    ('prepro', Prepro()),
-    ('model', SVR())
+    ('prepro', Prepro(True)),
+    ('model', SVR(max_iter=1000))
 ])
 
 # Fit the pipeline
@@ -109,16 +117,17 @@ pipeline = Pipeline([
 
 # gs.fit(X_train, y_train)
 # print(gs.best_params_)
-
+"""
 X, y = wind_df, gen_df['Total'].dropna()
 prepro = Prepro(False)
 X = prepro.transform(X, y)
 y = X['t0']
-
+X = X[X.columns[X.columns != 't0']]
 pipeline.fit(X, y)
 """
 # Load stored model and compare with newly trained
 # and store the best one
+"""
 p_new = pipeline.predict(X_test)
 
 pipeline_old = pickle.load(open('../models/model.pkl', 'rb'))
@@ -134,7 +143,7 @@ pipeline = pipeline_old
 print(mean_squared_error(p_old, y_test))
 print(mean_squared_error(p_new, y_test))
 print('OLD')
-
+"""
 ####################################################
 ## Do forecasting with the best one
 
@@ -142,17 +151,11 @@ print('OLD')
 forecasts = client.query(
 "SELECT * FROM MetForecasts where time > now()"
 ) # Query written in InfluxQL
-for_wind_df = get_df(forecasts)
-
-for_gen_df = get_df
-print(sorted(list(map(int, list(pd.unique(for_df['Lead_hours']))))))
+#forecast = get_df(forecasts).to_numpy()
 # Limit to only the newest source time
-newest_source_time = for_df["Source_time"].max()
-newest_forecasts = for_df.loc[for_df["Source_time"] == newest_source_time].copy()
+#newest_source_time = for_df["Source_time"].max()
+#newest_forecasts = for_df.loc[for_df["Source_time"] == newest_source_time].copy()
 
 # Preprocess the forecasts and do predictions in one fell swoop 
 # using your best pipeline.
-p = pipeline.predict(newest_forecasts)
-print(p)
 
-"""
