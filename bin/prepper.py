@@ -35,5 +35,4 @@ P = Prepper(fore_df, gen_df)
 
 
 
-P.pertinize()
-P.augment()
+T.augment()
