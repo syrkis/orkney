@@ -7,7 +7,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from director import Director
 from prep import X, y, P
 from icecream import ic
@@ -21,10 +21,10 @@ y_train, y_test = y[:500], y[500:]
 # pipeline definition
 mlflow.sklearn.autolog()
 params = {
-        "model__max_depth": [10, 13, 15, 30],
-        "model__n_estimators": [100, 200, 300, 400]
-    }
 
+        "model__max_depth": [i for i in range(7)],
+        "model__n_estimators": [100, 150, 200, 250]
+    }
 
 pipe = Pipeline([
         ('director', Director()),
@@ -32,9 +32,12 @@ pipe = Pipeline([
         ('model', RandomForestRegressor())
     ])
 
-clf = GridSearchCV(pipe, params)
+tscv = TimeSeriesSplit(n_splits=5)
 
-clf.fit(X_train, y_train)
-p = clf.predict(X_test)
-mse = mean_squared_error(y_test, p) ** (1 / 2)
-pickle.dump(pipe, open('../models/model.pkl', 'wb'))
+regr = GridSearchCV(estimator=pipe, cv=tscv, param_grid=params)
+
+regr.fit(X_train, y_train)
+p = regr.predict(X_test)
+mse = mean_squared_error(y_test, p)
+ic(mse)
+pickle.dump(regr, open('../models/model.pkl', 'wb'))
