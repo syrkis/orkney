@@ -1,0 +1,4 @@
+**/__py*/
+bin/mlruns
+models
+bin/__pycache__

@@ -17,12 +17,12 @@ def get_df(results):
 # Get the last 90 days of power generation data
 generation = client.query(
     "SELECT * FROM Generation where time > now()-90d"
-    ) # Query written in InfluxQL
+) # Query written in InfluxQL
 
 # Get the last 90 days of weather forecasts with the shortest lead time
 wind  = client.query(
     "SELECT * FROM MetForecasts where time > now()-90d and time <= now() and Lead_hours = '1'"
-    ) # Query written in InfluxQL
+) # Query written in InfluxQL
 
 forecasts = client.query(
     "SELECT * FROM MetForecasts where time > now()"
