@@ -19,7 +19,6 @@ X_train, X_test = X[:600], X[600:]
 y_train, y_test = y[:600], y[600:]
 
 # pipeline definition
-mlflow.sklearn.autolog()
 params = {
 
         "poly__degree": [i for i in range(1, 10)]
