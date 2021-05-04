@@ -4,10 +4,10 @@
 
 # imports
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.metrics import mean_squared_error
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
+from sklearn.linear_model import LinearRegression
 from director import Director
 from prep import X, y, P
 from icecream import ic
@@ -15,21 +15,21 @@ import mlflow
 from matplotlib import pyplot as plt
 import pickle
 
-X_train, X_test = X[:500], X[500:]
-y_train, y_test = y[:500], y[500:]
+X_train, X_test = X[:600], X[600:]
+y_train, y_test = y[:600], y[600:]
 
 # pipeline definition
 mlflow.sklearn.autolog()
 params = {
 
-        "model__max_depth": [i for i in range(1, 7)],
-        "model__n_estimators": [100, 150, 200, 250]
+        "poly__degree": [i for i in range(1, 10)]
     }
 
 pipe = Pipeline([
         ('director', Director()),
         ('scalar', StandardScaler()),
-        ('model', RandomForestRegressor())
+        ('poly', PolynomialFeatures()),
+        ('model', LinearRegression())
     ])
 
 tscv = TimeSeriesSplit(n_splits=5)
