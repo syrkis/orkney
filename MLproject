@@ -4,4 +4,4 @@ conda_env: Orkney.yaml
 
 entry_points:
   main:
-    command: "python train.py"
+    command: "python bin/train.py"
