@@ -22,7 +22,7 @@ y_train, y_test = y[:500], y[500:]
 mlflow.sklearn.autolog()
 params = {
 
-        "model__max_depth": [i for i in range(7)],
+        "model__max_depth": [i for i in range(1, 7)],
         "model__n_estimators": [100, 150, 200, 250]
     }
 
@@ -40,4 +40,4 @@ regr.fit(X_train, y_train)
 p = regr.predict(X_test)
 mse = mean_squared_error(y_test, p)
 ic(mse)
-pickle.dump(regr, open('../models/model.pkl', 'wb'))
+pickle.dump(regr, open('models/model.pkl', 'wb'))

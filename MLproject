@@ -1,0 +1,7 @@
+name: Orkney
+
+conda_env: Orkney.yaml
+
+entry_points:
+	main:
+	command: "python train.py"
